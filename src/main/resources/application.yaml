@@ -1,0 +1,30 @@
+config:
+  market:
+    url: openexchangerates.org
+    apikey: ${moneykey:123hu}
+  server:
+    port: ${server_port:8080}
+spring:
+  data:
+    cassandra:
+      keyspace-name: ${c_keyspace_name:cassandradb}
+      contact-points: ${cassandra_url}
+  r2dbc:
+    url: ${r_url}
+    username: ${p_username}
+    password: ${p_password}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+springdoc:
+  swagger-ui:
+    path: /swagger-ui-custom.html

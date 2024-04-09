@@ -1,0 +1,43 @@
+name: Deploy and Test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Run tests
+        run: mvn test
+
+      - name: Copy WAR file to remote host
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: target/your-project.war
+          target: /path/to/tomcat/webapps/your-project.war
+
+      - name: Start Docker service
+        run: sudo service docker start
+
+      - name: Build Grafana Docker image
+        run: docker build -t grafana-image .
+
+      - name: Run Grafana Docker container
+        run: ssh %{cloud_username}@${cloud_hostname} -p ${cloud_password} docker run -d -p 3000:3000 --name grafana-container grafana-image

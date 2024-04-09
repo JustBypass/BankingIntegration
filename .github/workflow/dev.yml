@@ -1,0 +1,13 @@
+name: Developement
+on:
+  push:
+    branches:
+      - dev
+jobs:
+  development:
+    runs-on: ubuntu:latest
+    steps:
+  test:
+    runs-on: ubuntu:latest
+    steps:
+      - name: Try sonarqube

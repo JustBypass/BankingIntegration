@@ -1,0 +1,68 @@
+version: '3'
+services:
+  postgresd:
+    image: postgres:latest
+    container_name: my_postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: postgres
+    ports:
+      - "5437:5432"
+    volumes:
+      - ../src/main/resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+  cassandra:
+    image: cassandra:4.0
+    ports:
+      - 9042:9042
+    volumes:
+      - ~/apps/cassandra:/var/lib/cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=cloudinfra
+
+  task:
+    build:
+      context: ../
+      dockerfile: ./Dockerfile
+    ports:
+      - "9092:8080"
+    environment:
+      p_port: 5437
+      p_addr: postgresd
+      server_port:
+      p_username: myuser
+      p_password: mypassword
+      r_url: r2dbc:postgresql://postgresd:${p_port}/postgres
+      cassandra_url: http://cassandra/
+    depends_on:
+      - postgresd
+    links:
+      - cassandra
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=root
+      - GF_SECURITY_ADMIN_PASSWORD=root
+    user: 'root'
+    volumes:
+      - ./dashboards:/var/lib/grafana/dashboards
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    links:
+      - task
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    ports:
+      - 9187:9187
+    environment:
+      DATA_SOURCE_NAME: "postgresql://myuser:postgrespassword@postgresd:5437/postgres?sslmode=disable"
+    links:
+      - postgresd
+      - prometheus
